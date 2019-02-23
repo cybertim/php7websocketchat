@@ -1,0 +1,52 @@
+<html>
+<body>
+<div id="root"></div>
+<script>
+    var host = 'ws://127.0.0.1:1337/';
+    var socket = new WebSocket(host);
+
+    socket.onmessage = function (e) {
+        var json = JSON.parse(e.data);
+        if (json['message'] !== null) {
+            var node = document.createElement("p");
+            node.innerText = json['message'];
+            document.getElementById("chatBox").appendChild(node);
+        }
+
+        if (json['join'] !== null && json['join'] !== undefined) {
+            var node = document.createElement("option");
+            node.value = json['join'];
+            node.text = json['displayName'];
+            document.getElementById("to").appendChild(node);
+        }
+
+    };
+
+    function send() {
+        var select = document.getElementById("to");
+        socket.send(
+            JSON.stringify(
+                {
+                    message: document.getElementById('chat').value,
+                    to: select.options[select.selectedIndex].value
+                }
+            )
+        );
+        document.getElementById('chat').value = '';
+    }
+</script>
+
+<h3>PHPWebsocketChat</h3>
+
+<div id="chatBox"></div>
+
+<select id="to">
+    <option value="channel">Everyone</option>
+</select>
+
+<input id="chat" type="text"/>
+
+<button type="submit" onclick="send();">Send</button>
+
+</body>
+</html>
