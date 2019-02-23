@@ -12,6 +12,6 @@ include "ChatHandler.php";
  * Gelukkig, met behulp van IDEA kom je al wat meer in de buurt (dankzij type-safety dat via comments is ingebouwd.. geeft je te denken..)
  */
 
-$server = new  WSServer("127.0.0.1","1337");
+$server = new  WSServer("127.0.0.1","4567");
 
 $server->run(new ChatHandler());

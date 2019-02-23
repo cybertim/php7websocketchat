@@ -22,9 +22,9 @@ class WSServer
     public function __destruct()
     {
         foreach ($this->clients as $client) {
-            socket_close($client);
+            socket_close($client->getSocket());
         }
-        socket_close($this->socket);
+        socket_close($this->server);
     }
 
     public function run(WSHandler $handlerer)
@@ -38,6 +38,7 @@ class WSServer
                 foreach ($message->getClients() as $client) {
                     if (!$this->send($client, $message->getMessage())) {
                         $handlerer->onLeaveClient($client);
+                        socket_close($client->getSocket());
                         unset($this->clients[array_search($client, $this->clients)]);
                     }
                 }
@@ -49,9 +50,9 @@ class WSServer
     private function checkNewClients()
     {
         if (($new_client = socket_accept($this->server)) !== false) {
+            $this->doHandShake($new_client);
             $ws_client = new WSClient($new_client);
             $this->clients[] = $ws_client;
-            $this->doHandShake($new_client);
             return $ws_client;
         }
         return false;

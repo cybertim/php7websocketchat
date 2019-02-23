@@ -11,9 +11,23 @@ class ChatHandler implements WSHandler
      * @var WSClient[]
      */
     private $clients = [];
+    /**
+     * @var ChatPersist
+     */
+    private $persist;
+
+    /**
+     * ChatHandler constructor.
+     */
+    public function __construct()
+    {
+        $this->persist = new ChatPersist("chatlog");
+    }
+
 
     public function onNewClient(WSClient $new_client)
     {
+        // TODO: replay chatlog (persist)
         $this->clients[] = $new_client;
         $this->queue[] = new WSMessage(json_encode([
             "message" => $new_client->getDisplayName() . " joined the chatroom.",
