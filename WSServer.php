@@ -32,19 +32,28 @@ class WSServer
         while (true) {
             if (($new_client = $this->checkNewClients()) !== false) $handlerer->onNewClient($new_client);
             foreach ($this->clients as $client) {
-                if (($message = $this->receive($client)) !== null) $handlerer->onMessageReceived($client, $message);
+                try {
+                    $message = $this->receive($client);
+                    if ($message != null) $handlerer->onMessageReceived($client, $message);
+                } catch (Exception $e) {
+                    echo $e;
+                    $handlerer->onLeaveClient($client);
+                    $this->removeClient($client);
+                }
             }
             while (($message = $handlerer->popMessage()) !== null) {
                 foreach ($message->getClients() as $client) {
-                    if (!$this->send($client, $message->getMessage())) {
-                        $handlerer->onLeaveClient($client);
-                        socket_close($client->getSocket());
-                        unset($this->clients[array_search($client, $this->clients)]);
-                    }
+                    $this->send($client, $message->getMessage());
                 }
             }
             sleep(1);
         }
+    }
+
+    private function removeClient(WSClient $client)
+    {
+        socket_close($client->getSocket());
+        unset($this->clients[array_search($client, $this->clients)]);
     }
 
     private function checkNewClients()
@@ -76,7 +85,8 @@ class WSServer
     {
         $encoded = $this->encodeFrame($text);
         if (socket_write($client->getSocket(), $encoded) !== false) return true;
-        return false;
+        echo socket_last_error($client->getSocket()) . '\n';
+        throw new Exception("write error");
     }
 
     private function receive(WSClient $client)
@@ -84,7 +94,12 @@ class WSServer
         if (($buffer = socket_read($client->getSocket(), 2048)) !== false) {
             return $this->decodeFrame($buffer);
         }
-        return null;
+        if (socket_last_error($client->getSocket()) === 54) {
+            throw new Exception("read error");
+        } else {
+            socket_clear_error($client->getSocket());
+            return null;
+        }
     }
 
     private function decodeFrame($frame)

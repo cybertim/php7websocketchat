@@ -1,4 +1,8 @@
 <html>
+<head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+</head>
 <body>
 <div id="root"></div>
 <script>
@@ -7,10 +11,19 @@
 
     socket.onmessage = function (e) {
         var json = JSON.parse(e.data);
-        if (json['message'] !== null) {
+        if (json['message'] !== null && json['message'] !== undefined) {
             var node = document.createElement("p");
             node.innerText = json['message'];
-            document.getElementById("chatBox").appendChild(node);
+            var chatBox = document.getElementById("chatBox");
+            chatBox.appendChild(node);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        if (json['left'] !== null && json['left'] !== undefined) {
+            var node = document.getElementById("to");
+            for (var i = 0; i < node.length; i++) {
+                if (node.options[i].value == json['left']) node.options[i].remove();
+            }
         }
 
         if (json['join'] !== null && json['join'] !== undefined) {
@@ -18,6 +31,10 @@
             node.value = json['join'];
             node.text = json['displayName'];
             document.getElementById("to").appendChild(node);
+        }
+
+        if (json['info'] !== null && json['info'] !== undefined) {
+            document.getElementById("nick").innerText = json['displayName'];
         }
 
     };
@@ -36,17 +53,23 @@
     }
 </script>
 
-<h3>PHPWebsocketChat</h3>
+<nav class="navbar navbar-light bg-light">
+    <a class="navbar-brand" href="#">
+        Welcome '<span id="nick"></span>', to PHPWebsocketChat
+    </a>
+</nav>
 
-<div id="chatBox"></div>
+<div class="container" style="height: 400px; overflow-y: scroll;" id="chatBox"></div>
 
-<select id="to">
-    <option value="channel">Everyone</option>
-</select>
-
-<input id="chat" type="text"/>
-
-<button type="submit" onclick="send();">Send</button>
+<div class="container">
+    <form class="form-inline" onsubmit="return false;">
+        <input class="form-control" placeholder="your message" id="chat" type="text"/>
+        <select class="form-control" id="to">
+            <option value="channel">Everyone</option>
+        </select>
+        <button type="submit" class="btn btn-primary" onclick="send();">Send</button>
+    </form>
+</div>
 
 </body>
 </html>

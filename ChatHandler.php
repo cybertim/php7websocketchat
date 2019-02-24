@@ -27,19 +27,49 @@ class ChatHandler implements WSHandler
 
     public function onNewClient(WSClient $new_client)
     {
-        // TODO: replay chatlog (persist)
-        $this->clients[] = $new_client;
+        $chatmsg = $new_client->getDisplayName() . " joined the chatroom.";
+
         $this->queue[] = new WSMessage(json_encode([
-            "message" => $new_client->getDisplayName() . " joined the chatroom.",
+            "message" => $chatmsg,
             "join" => $new_client->getUniqid(),
             "displayName" => $new_client->getDisplayName()
         ]), $this->clients);
+
+
+        // replay (20) history lines of public chat
+        foreach ($this->persist->find(20) as $line) {
+            $this->queue[] = new WSMessage(json_encode([
+                "message" => $line
+            ]), [$new_client]);
+        }
+
+        // replay all current active users
+        foreach ($this->clients as $client) {
+            $this->queue[] = new WSMessage(json_encode([
+                "join" => $client->getUniqid(),
+                "displayName" => $client->getDisplayName()]), [$new_client]);
+        }
+
+        // info for the client to know its own nickname
+        $this->queue[] = new WSMessage(json_encode([
+            "info" => true,
+            "displayName" => $new_client->getDisplayName()]), [$new_client]);
+
+        $this->clients[] = $new_client;
+        $this->persist->persist($chatmsg);
     }
 
     public function onLeaveClient(WSClient $leave_client)
     {
+        $chatmsg = $leave_client->getDisplayName() . " left the chatroom.";
+        $this->persist->persist($chatmsg);
+        $uid = $leave_client->getUniqid();
         unset($this->clients[array_search($leave_client, $this->clients)]);
-        $this->queue[] = new WSMessage(json_encode(["message" => $leave_client->getDisplayName() . " left the chatroom."]), $this->clients);
+
+        $this->queue[] = new WSMessage(json_encode([
+            "message" => $chatmsg,
+            "left" => $uid
+        ]), $this->clients);
     }
 
 
@@ -48,12 +78,16 @@ class ChatHandler implements WSHandler
         $json = json_decode($message);
         if ($json->to === "channel") {
             // broadcast to all clients
-            $this->queue[] = new WSMessage(json_encode(["message" => "<" . $client->getDisplayName() . "> " . $json->message]), $this->clients);
+            $chatmsg = "<" . $client->getDisplayName() . "> " . $json->message;
+            $this->persist->persist($chatmsg);
+            $this->queue[] = new WSMessage(json_encode(["message" => $chatmsg]), $this->clients);
         } else {
             // private message for the receiver and sender eyes only
+            $chatmsg = "[private] <" . $client->getDisplayName() . "> " . $json->message;
+            // not persisted because it is private
             foreach ($this->clients as $c) {
                 if ($c->getUniqid() == $json->to) {
-                    $this->queue[] = new WSMessage(json_encode(["message" => "[private] <" . $client->getDisplayName() . "> " . $json->message]), array($c, $client));
+                    $this->queue[] = new WSMessage(json_encode(["message" => $chatmsg]), [$c, $client]);
                 }
             }
         }
