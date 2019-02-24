@@ -36,7 +36,6 @@ class WSServer
                     $message = $this->receive($client);
                     if ($message != null) $handlerer->onMessageReceived($client, $message);
                 } catch (Exception $e) {
-                    echo $e;
                     $handlerer->onLeaveClient($client);
                     $this->removeClient($client);
                 }
@@ -50,13 +49,15 @@ class WSServer
         }
     }
 
-    private function removeClient(WSClient $client)
+    private
+    function removeClient(WSClient $client)
     {
         socket_close($client->getSocket());
         unset($this->clients[array_search($client, $this->clients)]);
     }
 
-    private function checkNewClients()
+    private
+    function checkNewClients()
     {
         if (($new_client = socket_accept($this->server)) !== false) {
             $this->doHandShake($new_client);
@@ -67,7 +68,8 @@ class WSServer
         return false;
     }
 
-    private function doHandShake($socket)
+    private
+    function doHandShake($socket)
     {
         $request = socket_read($socket, 2048);
         preg_match('#Sec-WebSocket-Key: (.*)\r\n#', $request, $matches);
@@ -81,15 +83,16 @@ class WSServer
     }
 
 
-    private function send(WSClient $client, string $text)
+    private
+    function send(WSClient $client, string $text)
     {
         $encoded = $this->encodeFrame($text);
         if (socket_write($client->getSocket(), $encoded) !== false) return true;
-        echo socket_last_error($client->getSocket()) . '\n';
         throw new Exception("write error");
     }
 
-    private function receive(WSClient $client)
+    private
+    function receive(WSClient $client)
     {
         if (($buffer = socket_read($client->getSocket(), 2048)) !== false) {
             return $this->decodeFrame($buffer);
@@ -102,7 +105,8 @@ class WSServer
         }
     }
 
-    private function decodeFrame($frame)
+    private
+    function decodeFrame($frame)
     {
         $len = ord($frame[1]) & 127;
         if ($len === 126) {
@@ -119,7 +123,8 @@ class WSServer
         return $text;
     }
 
-    private function encodeFrame(string $content)
+    private
+    function encodeFrame(string $content)
     {
         $b = 129;
         $len = strlen($content);
