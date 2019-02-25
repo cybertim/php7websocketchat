@@ -1,16 +1,17 @@
 <?php
 
-class ChatHandler implements WSHandler
-{
+class ChatHandler implements WSHandler {
 
     /**
      * @var WSMessage[]
      */
     private $queue = [];
+
     /**
      * @var WSClient[]
      */
     private $clients = [];
+
     /**
      * @var ChatPersist
      */
@@ -19,62 +20,57 @@ class ChatHandler implements WSHandler
     /**
      * ChatHandler constructor.
      */
-    public function __construct()
-    {
+    public function __construct() {
         $this->persist = new ChatPersist("chatlog");
     }
 
-
-    public function onNewClient(WSClient $new_client)
-    {
+    /**
+     * 
+     * @param WSClient $new_client
+     */
+    public function onNewClient(WSClient $new_client) {
         $chatmsg = $new_client->getDisplayName() . " joined the chatroom.";
 
         $this->queue[] = new WSMessage(json_encode([
-            "message" => $chatmsg,
-            "join" => $new_client->getUniqid(),
-            "displayName" => $new_client->getDisplayName()
-        ]), $this->clients);
-
+                    "message" => $chatmsg,
+                    "join" => $new_client->getUniqid(),
+                    "displayName" => $new_client->getDisplayName()
+                ]), $this->clients);
 
         // replay (20) history lines of public chat
         foreach ($this->persist->find(20) as $line) {
             $this->queue[] = new WSMessage(json_encode([
-                "message" => $line
-            ]), [$new_client]);
+                        "message" => $line
+                    ]), [$new_client]);
         }
-
         // replay all current active users
         foreach ($this->clients as $client) {
             $this->queue[] = new WSMessage(json_encode([
-                "join" => $client->getUniqid(),
-                "displayName" => $client->getDisplayName()]), [$new_client]);
+                        "join" => $client->getUniqid(),
+                        "displayName" => $client->getDisplayName()]), [$new_client]);
         }
-
         // info for the client to know its own nickname
         $this->queue[] = new WSMessage(json_encode([
-            "info" => true,
-            "displayName" => $new_client->getDisplayName()]), [$new_client]);
+                    "info" => true,
+                    "displayName" => $new_client->getDisplayName()]), [$new_client]);
 
         $this->clients[] = $new_client;
         $this->persist->persist($chatmsg);
     }
 
-    public function onLeaveClient(WSClient $leave_client)
-    {
+    public function onLeaveClient(WSClient $leave_client) {
         $chatmsg = $leave_client->getDisplayName() . " left the chatroom.";
         $this->persist->persist($chatmsg);
         $uid = $leave_client->getUniqid();
         unset($this->clients[array_search($leave_client, $this->clients)]);
 
         $this->queue[] = new WSMessage(json_encode([
-            "message" => $chatmsg,
-            "left" => $uid
-        ]), $this->clients);
+                    "message" => $chatmsg,
+                    "left" => $uid
+                ]), $this->clients);
     }
 
-
-    public function onMessageReceived(WSClient $client, string $message)
-    {
+    public function onMessageReceived(WSClient $client, string $message) {
         $json = json_decode($message);
         if ($json->to === "channel") {
             // broadcast to all clients
@@ -96,8 +92,7 @@ class ChatHandler implements WSHandler
     /**
      * @return null|WSMessage
      */
-    public function popMessage()
-    {
+    public function popMessage() {
         return array_pop($this->queue);
     }
 

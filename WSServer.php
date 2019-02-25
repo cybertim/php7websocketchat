@@ -33,8 +33,7 @@ class WSServer
             if (($new_client = $this->checkNewClients()) !== false) $handlerer->onNewClient($new_client);
             foreach ($this->clients as $client) {
                 try {
-                    $message = $this->receive($client);
-                    if ($message != null) $handlerer->onMessageReceived($client, $message);
+                    if (($message = $this->receive($client)) !== null) $handlerer->onMessageReceived($client, $message);
                 } catch (Exception $e) {
                     $handlerer->onLeaveClient($client);
                     $this->removeClient($client);

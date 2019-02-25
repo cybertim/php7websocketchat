@@ -14,9 +14,11 @@ Implement the `WSHandler` and create your own implementation to use with the Web
 A Demo used by the index is included: `ChatHandler` 
 
 ### Issues
+Safari & Chrome work great!
 
-Safari & Chrome work great but Firefox has a bug in the websocket:
+...but Firefox has a bug in the websocket:
 websockets are still open after a page close/refresh, even after firefox is closed!
-https://bugzilla.mozilla.org/show_bug.cgi?id=983243
-https://bugzilla.mozilla.org/show_bug.cgi?id=765738
-etc.. some bug-caroucel
+It will work, but clients won't leave.
+
+### Before production
+Use wss:// (websocket secure) and host on https.

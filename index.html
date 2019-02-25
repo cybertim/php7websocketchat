@@ -22,7 +22,7 @@
         if (json['left'] !== null && json['left'] !== undefined) {
             var node = document.getElementById("to");
             for (var i = 0; i < node.length; i++) {
-                if (node.options[i].value == json['left']) node.options[i].remove();
+                if (node.options[i].value === json['left']) node.options[i].remove();
             }
         }
 
@@ -55,7 +55,7 @@
 
 <nav class="navbar navbar-light bg-light">
     <a class="navbar-brand" href="#">
-        Welcome '<span id="nick"></span>', to PHPWebsocketChat
+        Welcome to PHPWebsocketChat, you are known as <span class="badge badge-secondary" id="nick"></span>
     </a>
 </nav>
 

@@ -8,7 +8,7 @@ class WSMessage
     /**
      * WSMessage constructor.
      * @param string $message
-     * @param array|WSClient[] $clients
+     * @param WSClient[] $clients
      */
     public function __construct(string $message, array $clients)
     {
